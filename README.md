@@ -20,3 +20,8 @@
 🔹 🎁 Coleta de Item
 
 🔹 🎲 Trap
+
+🔹 🎲 Player PU (Powerups) 
+    PU invulnerabilidade (está desativando apenas colisor do tipo capsule e precisa ser testado); 
+    PU aumento velocidade (testar main project); 
+    PU aumento de força (testar main project);
