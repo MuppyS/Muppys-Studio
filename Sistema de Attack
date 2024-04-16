@@ -1,0 +1,68 @@
+using UnityEngine;
+
+public class AttackSystem : MonoBehaviour
+{
+    public int damage = 10;
+    public float attackRange = 1f;
+    public LayerMask enemyLayer;
+
+    Animator animator;
+
+    void Start()
+    {
+        animator = GetComponent<Animator>();
+        if (animator == null)
+        {
+            Debug.LogError("Animator component not found on GameObject: " + gameObject.name);
+        }
+    }
+
+    void Update()
+    {
+        if (Input.GetButtonDown("Fire1")) // Fire1 representa o botão esquerdo do mouse
+        {
+            Attack();
+        }
+    }
+
+    void Attack()
+    {
+        animator.SetBool("isAttacking", true);
+
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(transform.position, attackRange, enemyLayer);
+
+        if (hitEnemies.Length > 0)
+        {
+            Debug.Log(hitEnemies.Length + " enemies hit!");
+        }
+
+        foreach (Collider2D enemy in hitEnemies)
+        {
+            if (enemy.CompareTag("Enemy")) // Verifique se o inimigo tem a tag "Enemy"
+            {
+                LifeSystem enemyLife = enemy.GetComponent<LifeSystem>();
+                if (enemyLife != null)
+                {
+                    enemyLife.TakeDamage(damage);
+                    Rigidbody2D enemyRB = enemy.GetComponent<Rigidbody2D>();
+                    if (enemyRB != null)
+                    {
+                        // Aplica um impulso para empurrar o inimigo
+                        Vector2 direction = enemy.transform.position - transform.position;
+                        enemyRB.AddForce(direction.normalized * 100f, ForceMode2D.Impulse);
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("LifeSystem component not found on enemy: " + enemy.name);
+                }
+            }
+        }
+    }
+
+    void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, attackRange);
+    }
+}
