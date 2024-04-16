@@ -4,11 +4,11 @@ public class AttackSystem : MonoBehaviour
 {
     public int damage = 10;
     public float attackRange = 1f;
-    public LayerMask enemyLayer;
+    public LayerMask playerLayer; // Renomeado de Player para evitar confusão
 
-    Animator animator;
+    private Animator animator;
 
-    void Start()
+    private void Start()
     {
         animator = GetComponent<Animator>();
         if (animator == null)
@@ -17,7 +17,7 @@ public class AttackSystem : MonoBehaviour
         }
     }
 
-    void Update()
+    private void Update()
     {
         if (Input.GetButtonDown("Fire1")) // Fire1 representa o botão esquerdo do mouse
         {
@@ -25,42 +25,44 @@ public class AttackSystem : MonoBehaviour
         }
     }
 
-    void Attack()
+    private void Attack()
     {
-        animator.SetBool("isAttacking", true);
-
-        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(transform.position, attackRange, enemyLayer);
-
-        if (hitEnemies.Length > 0)
+        if (animator != null)
         {
-            Debug.Log(hitEnemies.Length + " enemies hit!");
+            animator.SetTrigger("Attack");
+        }
+        else
+        {
+            Debug.LogWarning("Animator component not found.");
         }
 
-        foreach (Collider2D enemy in hitEnemies)
+        Collider2D[] hitPlayers = Physics2D.OverlapCircleAll(transform.position, attackRange, playerLayer);
+
+        foreach (Collider2D player in hitPlayers)
         {
-            if (enemy.CompareTag("Enemy")) // Verifique se o inimigo tem a tag "Enemy"
+            if (player.gameObject != gameObject && player.gameObject.CompareTag("Player")) // Verifica se é outro jogador
             {
-                LifeSystem enemyLife = enemy.GetComponent<LifeSystem>();
-                if (enemyLife != null)
+                LifeSystem playerLife = player.GetComponent<LifeSystem>();
+                if (playerLife != null)
                 {
-                    enemyLife.TakeDamage(damage);
-                    Rigidbody2D enemyRB = enemy.GetComponent<Rigidbody2D>();
-                    if (enemyRB != null)
-                    {
-                        // Aplica um impulso para empurrar o inimigo
-                        Vector2 direction = enemy.transform.position - transform.position;
-                        enemyRB.AddForce(direction.normalized * 100f, ForceMode2D.Impulse);
-                    }
+                    playerLife.TakeDamage(damage);
                 }
                 else
                 {
-                    Debug.LogWarning("LifeSystem component not found on enemy: " + enemy.name);
+                    Debug.LogWarning("LifeSystem component not found on player: " + player.name);
+                }
+
+                Rigidbody2D playerRB = player.GetComponent<Rigidbody2D>();
+                if (playerRB != null)
+                {
+                    Vector2 direction = player.transform.position - transform.position;
+                    playerRB.AddForce(direction.normalized * 5f, ForceMode2D.Impulse);
                 }
             }
         }
     }
 
-    void OnDrawGizmosSelected()
+    private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, attackRange);
