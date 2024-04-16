@@ -1,0 +1,43 @@
+using UnityEngine;
+
+public class CanBraw
+     : MonoBehaviour
+{
+    public float minZoom = 5f; // Zoom mínimo
+    public float maxZoom = 10f; // Zoom máximo
+    public float zoomSpeed = 5f; // Velocidade de ajuste do zoom
+
+    [SerializeField] private Transform target1; // Player 1
+    [SerializeField] private Transform target2; // Player 2
+
+    [SerializeField] private CameraBounds cameraBounds; // Referência para o script CameraBounds
+
+    private Camera cam;
+
+    private void Start()
+    {
+        cam = GetComponent<Camera>();
+    }
+
+    private void Update()
+    {
+        // Calcula a distância entre os jogadores
+        float distance = Vector3.Distance(target1.position, target2.position);
+
+        // Calcula o zoom com base na distância entre os jogadores
+        float targetZoom = Mathf.Lerp(minZoom, maxZoom, Mathf.InverseLerp(0f, 10f, distance));
+
+        // Aplica o zoom suavemente
+        cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, targetZoom, Time.deltaTime * zoomSpeed);
+
+        // Calcula a posição média dos jogadores
+        Vector3 averagePosition = (target1.position + target2.position) / 2f;
+
+        // Limita a posição da câmera dentro dos limites especificados pela área demarcada
+        float clampedX = Mathf.Clamp(averagePosition.x, cameraBounds.minCameraPosition.x, cameraBounds.maxCameraPosition.x);
+        float clampedY = Mathf.Clamp(averagePosition.y, cameraBounds.minCameraPosition.y, cameraBounds.maxCameraPosition.y);
+
+        // Define a posição da câmera como a posição média dos jogadores, mas com limites aplicados
+        transform.position = new Vector3(clampedX, clampedY, transform.position.z);
+    }
+}
