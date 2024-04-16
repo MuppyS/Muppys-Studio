@@ -1,0 +1,48 @@
+using UnityEngine;
+
+public class Trap : MonoBehaviour
+{
+    private bool isPlayerInside = false;
+
+    // Tempo de duração dos controles bagunçados
+    public float confusedDuration = 3f;
+
+    // Referência ao componente de controle do jogador
+    private PlayerMovement playerController;
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Player"))
+        {
+            isPlayerInside = true;
+            playerController = collision.gameObject.GetComponent<PlayerMovement>();
+
+            // Bagunça os controles do jogador
+            if (playerController != null)
+            {
+                playerController.ConfuseControls();
+                Invoke("ResetControls", confusedDuration);
+            }
+
+            // Destroi a armadilha
+            Destroy(gameObject);
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Player"))
+        {
+            isPlayerInside = false;
+        }
+    }
+
+    private void ResetControls()
+    {
+        // Reseta os controles do jogador após o tempo de confusão
+        if (playerController != null && isPlayerInside)
+        {
+            playerController.ResetControls();
+        }
+    }
+}
