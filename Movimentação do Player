@@ -1,0 +1,246 @@
+using System.Collections;
+using UnityEngine;
+
+public class PlayerMovement : MonoBehaviour
+{
+    private float horizontal;
+    public float speed = 8f;
+    public float jumpingPower = 16f;
+    private bool isFacingRight = true;
+
+    public Animator animator;
+
+    private bool isWallSliding;
+    private float wallSlidingSpeed = 2f;
+
+    private bool isWallJumping;
+    private float wallJumpingDirection;
+    private float wallJumpingTime = 0.2f;
+    private float wallJumpingCounter;
+    private float wallJumpingDuration = 0.4f;
+    private Vector2 wallJumpingPower = new Vector2(8f, 16f);
+
+    private bool doubleJump;
+    private bool canDash = true;
+    private bool isDashing;
+    public float dashingPower = 24f;
+    private float dashingTime = 0.2f;
+    private float dashingCooldown = 1f;
+
+    private bool canDoubleJump;
+
+    [SerializeField] private Rigidbody2D rb;
+    [SerializeField] private Transform groundCheck;
+    [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private TrailRenderer tr;
+    [SerializeField] private Transform wallCheck;
+    [SerializeField] private LayerMask wallLayer;
+    [SerializeField] private ParticleSystem particulas;
+
+
+    private int playerLayer;
+    private int platformLayer;
+
+    void Start()
+    {
+        playerLayer = LayerMask.NameToLayer("Player");
+        platformLayer = LayerMask.NameToLayer("Platform");
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+ 
+
+        if (isDashing)
+        {
+            return;
+
+            if (isDashing)
+            {
+                animator.SetBool("isDashing", true);
+                return;
+            }
+            else
+            {
+                animator.SetBool("isDashing", false);
+            }
+
+
+        }
+
+        horizontal = Input.GetAxisRaw("Horizontal");
+
+        if (isGrounded())
+        {
+            canDoubleJump = true;
+
+           
+        }
+
+        if (isGrounded() && !Input.GetButton("Jump"))
+        {
+            doubleJump = false;
+            animator.SetBool("isJumping", false);
+            animator.SetBool("isDoubleJumping", false);
+        }
+
+        if (Input.GetButtonDown("Jump"))
+        {
+            if (isGrounded())
+            {
+                Jump();
+
+              
+            }
+            else if (isWallSliding)
+            {
+                WallJump();
+            }
+            else if (canDoubleJump)
+            {
+                DoubleJump();
+
+                
+            }
+        }
+
+        WallSlide();
+
+        if (!isWallJumping)
+        {
+            Flip();
+        }
+
+        if (Input.GetButtonDown("Fire3") && canDash)
+        {
+            StartCoroutine(Dash());
+        }
+
+        if (Mathf.Abs(horizontal) > 0)
+        {
+            animator.SetBool("Run", true);
+            animator.SetBool("isWallSliding", isWallSliding);
+
+            particulas.Play();
+        }
+        else
+        {
+            animator.SetBool("Run", false);
+        }
+
+        if (Input.GetButtonDown("Vertical") && Input.GetAxisRaw("Vertical") < 0 && isGrounded())
+        {
+            
+            Physics2D.IgnoreLayerCollision(playerLayer, platformLayer, true);
+            StartCoroutine(EnableCollisionAfterDelay(0.5f)); // Reativa as colisões após 0.5 segundos
+        }
+    }
+
+    private IEnumerator EnableCollisionAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+     
+        Physics2D.IgnoreLayerCollision(playerLayer, platformLayer, false);
+    }
+
+    private void FixedUpdate()
+    {
+        if (isDashing)
+        {
+            return;
+
+           
+        }
+
+        rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
+
+       
+        if (!isGrounded() && rb.velocity.y < 0 && !isWallSliding)
+        {
+            rb.velocity += Vector2.up * Physics2D.gravity.y * (wallSlidingSpeed - 1) * Time.fixedDeltaTime;
+        }
+    }
+
+    private bool isGrounded()
+    {
+        return Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
+    }
+
+    private bool isWalled()
+    {
+        return Physics2D.OverlapCircle(wallCheck.position, 0.2f, wallLayer);
+    }
+
+    private void WallSlide()
+    {
+        if (isWalled() && !isGrounded() && rb.velocity.y < 0f)
+        {
+            isWallSliding = true;
+            rb.velocity = new Vector2(rb.velocity.x, -wallSlidingSpeed);
+        }
+        else
+        {
+            isWallSliding = false;
+        }
+    }
+
+    private void WallJump()
+    {
+        if (isWallSliding)
+        {
+            isWallJumping = true;
+            wallJumpingDirection = isFacingRight ? 1 : -1; // Alterado para inverter a direção corretamente
+            rb.velocity = new Vector2(wallJumpingDirection * wallJumpingPower.x, wallJumpingPower.y);
+            Invoke(nameof(StopWallJumping), wallJumpingDuration);
+        }
+    }
+
+    private void StopWallJumping()
+    {
+        isWallJumping = false;
+    }
+
+    private void Jump()
+    {
+        rb.velocity = new Vector2(rb.velocity.x, jumpingPower);
+        animator.SetBool("isJumping", true);
+
+       
+
+    }
+
+    private void DoubleJump()
+    {
+        rb.velocity = new Vector2(rb.velocity.x, jumpingPower);
+        doubleJump = true;
+        canDoubleJump = false;
+        animator.SetBool("isJumping", true);
+        animator.SetBool("isDoubleJumping", true);
+    }
+
+    private void Flip()
+    {
+        if (horizontal > 0 && !isFacingRight || horizontal < 0 && isFacingRight)
+        {
+            isFacingRight = !isFacingRight;
+            transform.Rotate(0f, 180f, 0f);
+        }
+    }
+
+    private IEnumerator Dash()
+    {
+        canDash = false;
+        isDashing = true;
+        float originalGravity = rb.gravityScale;
+        rb.gravityScale = 0f;
+        rb.velocity = new Vector2(transform.right.x * dashingPower, 0f);
+        tr.emitting = true;
+        yield return new WaitForSeconds(dashingTime);
+        tr.emitting = false;
+        rb.gravityScale = originalGravity;
+        isDashing = false;
+        yield return new WaitForSeconds(dashingCooldown);
+        canDash = true;
+    }
+}
