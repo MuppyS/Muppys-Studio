@@ -1,0 +1,38 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class LifeBar : MonoBehaviour
+{
+    public int Life;
+    public Image LIFEBAR;
+    float CurrentLife;
+    private float MaxLIFEBAR = 100;
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        Life = 100;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        CurrentLife = Life;
+        LIFEBAR.fillAmount = CurrentLife / MaxLIFEBAR;
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.tag == "Enemy")
+        {
+            Life -= 10;
+        }
+        if(collision.gameObject.tag == "Cure")
+        {
+            Life += 10;
+        }
+
+    }
+}
