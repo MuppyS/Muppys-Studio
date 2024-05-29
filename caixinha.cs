@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-public class caixinha : MonoBehaviour
+public class Caixinha : MonoBehaviour
 {
     public GameObject[] arGo;
 
